@@ -33,64 +33,77 @@ public class ScanPathToken extends PathToken {
     }
 
     @Override
-    public void evaluate(String currentPath, PathRef parent, Object model, EvaluationContextImpl ctx) {
+    public void evaluate( String currentPath , PathRef parent , Object model , EvaluationContextImpl ctx ) {
 
-        PathToken pt = next();
+        PathToken pt = next( );
 
-        walk(pt, currentPath, parent,  model, ctx, createScanPredicate(pt, ctx));
+        walk(pt , currentPath , parent , model , ctx , createScanPredicate(pt , ctx));
     }
 
-    public static void walk(PathToken pt, String currentPath, PathRef parent, Object model, EvaluationContextImpl ctx, Predicate predicate) {
-        if (ctx.jsonProvider().isMap(model)) {
-            walkObject(pt, currentPath, parent, model, ctx, predicate);
-        } else if (ctx.jsonProvider().isArray(model)) {
-            walkArray(pt, currentPath, parent, model, ctx, predicate);
+    public static void walk( PathToken pt , String currentPath , PathRef parent , Object model , EvaluationContextImpl ctx , Predicate predicate ) {
+        if (ctx.jsonProvider( ).isMap(model)) {
+            walkObject(pt , currentPath , parent , model , ctx , predicate);
+        } else if (ctx.jsonProvider( ).isArray(model)) {
+            walkArray(pt , currentPath , parent , model , ctx , predicate);
         }
     }
 
-    public static void walkArray(PathToken pt, String currentPath, PathRef parent, Object model, EvaluationContextImpl ctx, Predicate predicate) {
+    public static void walkArray( PathToken pt , String currentPath , PathRef parent , Object model , EvaluationContextImpl ctx , Predicate predicate ) {
 
         if (predicate.matches(model)) {
-            if (pt.isLeaf()) {
-                pt.evaluate(currentPath, parent, model, ctx);
+            if (pt.isLeaf( )) {
+                pt.evaluate(currentPath , parent , model , ctx);
             } else {
-                PathToken next = pt.next();
-                Iterable<?> models = ctx.jsonProvider().toIterable(model);
+                PathToken next = pt.next( );
+                Iterable<?> models = ctx.jsonProvider( ).toIterable(model);
                 int idx = 0;
                 for (Object evalModel : models) {
                     String evalPath = currentPath + "[" + idx + "]";
                     next.setUpstreamArrayIndex(idx);
-                    next.evaluate(evalPath, parent, evalModel, ctx);
+                    next.evaluate(evalPath , parent , evalModel , ctx);
                     idx++;
                 }
             }
         }
 
-        Iterable<?> models = ctx.jsonProvider().toIterable(model);
+        Iterable<?> models = ctx.jsonProvider( ).toIterable(model);
         int idx = 0;
         for (Object evalModel : models) {
             String evalPath = currentPath + "[" + idx + "]";
-            walk(pt, evalPath, PathRef.create(model, idx), evalModel, ctx, predicate);
+            walk(pt , evalPath , PathRef.create(model , idx) , evalModel , ctx , predicate);
             idx++;
         }
     }
 
+    /**
+     * @param pt          the path token
+     * @param currentPath current path
+     * @param parent      parent node
+     * @param model       the json model
+     * @param ctx         the EvaluationContextImpl object
+     * @param predicate   the predicate
+     */
     public static void walkObject(PathToken pt, String currentPath, PathRef parent, Object model, EvaluationContextImpl ctx, Predicate predicate) {
-        List<Integer> indexList=null;
-        if((!pt.isLeaf()) && pt.next() instanceof ArrayIndexToken && pt.next().isLeaf()){
-            ArrayIndexToken token=(ArrayIndexToken)pt.next();
+        // Detect whether the next node is leaf and array
+        List<Integer> indexList = null; //NOPMD - suppressed DataflowAnomalyAnalysis
+        final PathToken nxt = pt.next();
+        if (!pt.isLeaf() && nxt instanceof ArrayIndexToken && nxt.isLeaf()) { //NOPMD - suppressed LawOfDemeter - TODO explain reason for suppression
+            //Using reflect to get the field
+            final ArrayIndexToken token = (ArrayIndexToken) pt.next();
             try {
-                Field arrayIndexOperation=token.getClass().getDeclaredField("arrayIndexOperation");
-                arrayIndexOperation.setAccessible(true);
-                ArrayIndexOperation operation=(ArrayIndexOperation) arrayIndexOperation.get(token);
-                Field indexField=operation.getClass().getDeclaredField("indexes");
-                indexField.setAccessible(true);
-                indexList=(List<Integer>) indexField.get(operation);
+                final Class<? extends ArrayIndexToken> aptCls = token.getClass(); //NOPMD - suppressed LawOfDemeter
+                final Field arrIdxOpr = aptCls.getDeclaredField("arrayIndexOperation"); //NOPMD - suppressed LawOfDemeter
+                arrIdxOpr.setAccessible(true); //NOPMD - suppressed LawOfDemeter   //NOPMD - suppressed AvoidAccessibilityAlteration - TODO explain reason for suppression
+                final ArrayIndexOperation operation = (ArrayIndexOperation) arrIdxOpr.get(token); //NOPMD - suppressed LawOfDemeter
+                final Class<? extends ArrayIndexOperation> oprCls = operation.getClass(); //NOPMD - suppressed LawOfDemeter
+                final Field indexField = oprCls.getDeclaredField("indexes"); //NOPMD - suppressed LawOfDemeter
+                // Get the index list
+                indexField.setAccessible(true); //NOPMD - suppressed LawOfDemeter   //NOPMD - suppressed AvoidAccessibilityAlteration - TODO explain reason for suppression
+                indexList = (List<Integer>) indexField.get(operation); //NOPMD - suppressed LawOfDemeter
                 pt.setNext(null);
-            } catch (NoSuchFieldException | IllegalAccessException e) {
-                e.printStackTrace();
+            } catch (NoSuchFieldException | IllegalAccessException e) { //NOPMD - suppressed EmptyCatchBlock - TODO explain reason for suppression
+
             }
-//            token.arr
         }
         if (predicate.matches(model)) {
             pt.evaluate(currentPath, parent, model, ctx);
@@ -104,36 +117,40 @@ public class ScanPathToken extends PathToken {
                 walk(pt, evalPath, PathRef.create(model, property), propertyModel, ctx, predicate);
             }
         }
-        if(indexList!=null){
-            Object result=ctx.getValueResult();
-            if(result instanceof JSONArray){
-                JSONArray actualValueRes=(JSONArray) result,actualPathResult=(JSONArray)ctx.getPathResult() ;
-                List<Object> valueStore=new ArrayList<>();
-                List<Object> pathStore=new ArrayList<>();
-                for(int i=0;i<indexList.size();i++){
-                    int index=indexList.get(i);
-                    if(index<actualValueRes.size()){
-                        valueStore.add(actualValueRes.get(index));
-                        pathStore.add(actualPathResult.get(index));
+        // If the next is index array, then enter if
+        if (indexList != null) {
+            final Object result = ctx.getValueResult();
+            // get the element at specified index
+            if (result instanceof JSONArray) {
+                final JSONArray actualValueRes = (JSONArray) result;
+                final JSONArray actualPathResult = (JSONArray) ctx.getPathResult();
+                final List<Object> valueStore = new ArrayList<>();
+                final List<Object> pathStore = new ArrayList<>();
+                for (final int index : indexList) {
+                    if (index < actualValueRes.size()) { //NOPMD - suppressed LawOfDemeter
+                        final Object idxVRes = actualValueRes.get(index); //NOPMD - suppressed LawOfDemeter
+                        valueStore.add(idxVRes);
+                        final Object idxPRes = actualValueRes.get(index); //NOPMD - suppressed LawOfDemeter
+                        pathStore.add(idxPRes);
                     }
                 }
-                actualValueRes.clear();
-                actualPathResult.clear();
-                actualValueRes.addAll(valueStore);
-                actualPathResult.addAll(pathStore);
+                actualValueRes.clear(); //NOPMD - suppressed LawOfDemeter
+                actualPathResult.clear(); //NOPMD - suppressed LawOfDemeter
+                actualValueRes.addAll(valueStore); //NOPMD - suppressed LawOfDemeter
+                actualPathResult.addAll(pathStore); //NOPMD - suppressed LawOfDemeter
             }
         }
     }
 
-    private static Predicate createScanPredicate(final PathToken target, final EvaluationContextImpl ctx) {
+    private static Predicate createScanPredicate( final PathToken target , final EvaluationContextImpl ctx ) {
         if (target instanceof PropertyPathToken) {
-            return new PropertyPathTokenPredicate(target, ctx);
+            return new PropertyPathTokenPredicate(target , ctx);
         } else if (target instanceof ArrayPathToken) {
             return new ArrayPathTokenPredicate(ctx);
         } else if (target instanceof WildcardPathToken) {
-            return new WildcardPathTokenPredicate();
+            return new WildcardPathTokenPredicate( );
         } else if (target instanceof PredicatePathToken) {
-            return new FilterPathTokenPredicate(target, ctx);
+            return new FilterPathTokenPredicate(target , ctx);
         } else {
             return FALSE_PREDICATE;
         }
@@ -151,13 +168,13 @@ public class ScanPathToken extends PathToken {
     }
 
     private interface Predicate {
-        boolean matches(Object model);
+        boolean matches( Object model );
     }
 
-    private static final Predicate FALSE_PREDICATE = new Predicate() {
+    private static final Predicate FALSE_PREDICATE = new Predicate( ) {
 
         @Override
-        public boolean matches(Object model) {
+        public boolean matches( Object model ) {
             return false;
         }
     };
@@ -166,21 +183,21 @@ public class ScanPathToken extends PathToken {
         private final EvaluationContextImpl ctx;
         private PredicatePathToken predicatePathToken;
 
-        private FilterPathTokenPredicate(PathToken target, EvaluationContextImpl ctx) {
+        private FilterPathTokenPredicate( PathToken target , EvaluationContextImpl ctx ) {
             this.ctx = ctx;
             predicatePathToken = (PredicatePathToken) target;
         }
 
         @Override
-        public boolean matches(Object model) {
-            return predicatePathToken.accept(model, ctx.rootDocument(), ctx.configuration(), ctx);
+        public boolean matches( Object model ) {
+            return predicatePathToken.accept(model , ctx.rootDocument( ) , ctx.configuration( ) , ctx);
         }
     }
 
     private static final class WildcardPathTokenPredicate implements Predicate {
 
         @Override
-        public boolean matches(Object model) {
+        public boolean matches( Object model ) {
             return true;
         }
     }
@@ -188,13 +205,13 @@ public class ScanPathToken extends PathToken {
     private static final class ArrayPathTokenPredicate implements Predicate {
         private final EvaluationContextImpl ctx;
 
-        private ArrayPathTokenPredicate(EvaluationContextImpl ctx) {
+        private ArrayPathTokenPredicate( EvaluationContextImpl ctx ) {
             this.ctx = ctx;
         }
 
         @Override
-        public boolean matches(Object model) {
-            return ctx.jsonProvider().isArray(model);
+        public boolean matches( Object model ) {
+            return ctx.jsonProvider( ).isArray(model);
         }
     }
 
@@ -202,15 +219,15 @@ public class ScanPathToken extends PathToken {
         private final EvaluationContextImpl ctx;
         private PropertyPathToken propertyPathToken;
 
-        private PropertyPathTokenPredicate(PathToken target, EvaluationContextImpl ctx) {
+        private PropertyPathTokenPredicate( PathToken target , EvaluationContextImpl ctx ) {
             this.ctx = ctx;
             propertyPathToken = (PropertyPathToken) target;
         }
 
         @Override
-        public boolean matches(Object model) {
+        public boolean matches( Object model ) {
 
-            if (! ctx.jsonProvider().isMap(model)) {
+            if (! ctx.jsonProvider( ).isMap(model)) {
                 return false;
             }
 
@@ -227,19 +244,19 @@ public class ScanPathToken extends PathToken {
 //                return true;
 //            }
 
-            if (! propertyPathToken.isTokenDefinite()) {
+            if (! propertyPathToken.isTokenDefinite( )) {
                 // It's responsibility of PropertyPathToken code to handle indefinite scenario of properties,
                 // so we'll allow it to do its job.
                 return true;
             }
 
-            if (propertyPathToken.isLeaf() && ctx.options().contains(Option.DEFAULT_PATH_LEAF_TO_NULL)) {
+            if (propertyPathToken.isLeaf( ) && ctx.options( ).contains(Option.DEFAULT_PATH_LEAF_TO_NULL)) {
                 // In case of DEFAULT_PATH_LEAF_TO_NULL missing properties is not a problem.
                 return true;
             }
 
-            Collection<String> keys = ctx.jsonProvider().getPropertyKeys(model);
-            return keys.containsAll(propertyPathToken.getProperties());
+            Collection<String> keys = ctx.jsonProvider( ).getPropertyKeys(model);
+            return keys.containsAll(propertyPathToken.getProperties( ));
         }
     }
 }

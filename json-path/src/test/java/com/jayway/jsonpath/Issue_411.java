@@ -3,29 +3,47 @@ package com.jayway.jsonpath;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class Issue_411 {
+/**
+ * Test for Issue 411
+ */
+public class Issue_411 { //NOPMD - suppressed AtLeastOneConstructor
+    /**
+     * Test whether the index work
+     */
     @Test
-    public void TestIndex1(){
-        String json="{\n" +
-                "\"description\":\"out\",\n" +
-                "\"inner\":{\n" +
-                "\"description\":\"inner\"\n" +
-                "}\n" +
-                "}";
-        Object result=JsonPath.parse(json).read("$..description[1]");
-        Assert.assertEquals("[\"inner\"]",result.toString());
+    public void testIndex1() {
+        // Using two description in different layer
+        final String json = "{\n"
+                + "\"description\":\"out\",\n"
+                + "\"inner\":{\n"
+                + "\"description\":\"inner\"\n"
+                + "}\n"
+                + "}";
+        final Object result = JsonPath.parse(json).read("$..description[1]"); //NOPMD - suppressed LawOfDemeter
+        Assert.assertEquals("Wrong output", "[\"inner\"]", result.toString()); //NOPMD - suppressed LawOfDemeter
     }
+
+    /**
+     * Another test case to test whether the index work
+     */
     @Test
-    public void TestIndex2(){
-        String json="{\n" +
-                "\"description\":[\"1\",\"2\"],\n" +
-                "\"map\":\"go\",\n" +
-                "\"inner\":{\n" +
-                "\"description\":\"inner\"\n" +
-                "}\n" +
+    public void testIndex2() {
+        // Using two description in different layer and different type
+        final String json = "{\n"
+                +
+                "\"description\":[\"1\",\"2\"],\n"
+                +
+                "\"map\":\"go\",\n"
+                +
+                "\"inner\":{\n"
+                +
+                "\"description\":\"inner\"\n"
+                +
+                "}\n"
+                +
                 "}";
-        Object result=JsonPath.parse(json).read("$..description[0]");
+        final Object result = JsonPath.parse(json).read("$..description[0]"); //NOPMD - suppressed LawOfDemeter
 //        System.out.println(result);
-        Assert.assertEquals("[[\"1\",\"2\"]]",result.toString());
+        Assert.assertEquals("Wrong output", "[[\"1\",\"2\"]]", result.toString()); //NOPMD - suppressed LawOfDemeter
     }
 }
