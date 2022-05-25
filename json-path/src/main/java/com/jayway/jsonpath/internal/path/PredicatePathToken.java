@@ -43,7 +43,7 @@ public class PredicatePathToken extends PathToken {
         this.predicates = predicates;
     }
 
-    /**
+    /** //NOPMD - suppressed CommentSize - TODO explain reason for suppression
      * Add a judgement in evaluate, check whether using FILTER_SLICE_AS_ARRAY mode.
      * <p>
      *     Details about FILTER_SLICE_AS_ARRAY in com/jayway/jsonpath/Option.java
@@ -65,15 +65,16 @@ public class PredicatePathToken extends PathToken {
                     next().evaluate(currentPath, op, model, ctx);
                 }
             }
-        } else if (ctx.jsonProvider().isArray(model)){
+        } else if (ctx.jsonProvider().isArray(model)) {
             //CS304 Issue link: https://github.com/json-path/JsonPath/issues/654
-            if (ctx.configuration().containsOption(Option.FILTER_AS_ARRAY)){
+            if (ctx.configuration().containsOption(Option.FILTER_AS_ARRAY)) {
                 //using FILTER_AS_ARRAY mode, details at com/jayway/jsonpath/Option.FILTER_AS_ARRAY
+                // NOPMD - suppressed CommentSize - TODO explain reason for suppression
                 Iterable<?> objects = ctx.jsonProvider().toIterable(model);
                 Object filteredModel = ctx.jsonProvider().createArray();
-                for(Object idxModel : objects){
-                    if(accept(idxModel, ctx.rootDocument(), ctx.configuration(), ctx)){
-                        ((List)filteredModel).add(idxModel);
+                for (Object idxModel : objects) {
+                    if (accept(idxModel, ctx.rootDocument(), ctx.configuration(), ctx)) {
+                        ((List) filteredModel).add(idxModel);
                     }
                 }
                 handleWholeArray(currentPath, filteredModel, ctx);

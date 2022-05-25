@@ -88,7 +88,8 @@ public enum Option {
     /**
      * This mode can be used query at special filters.
      * In the origin design, the filter receive an array and return an array.
-     * However, the subsequent operation will apply on each element in the returned array, rather than the whole array itself.
+     * However, the subsequent operation will apply on each element in the returned array,
+     * rather than the whole array itself.
      * The mode treats the result of filter as array, and it might be useful to some situation.
      * For example:
      *
@@ -122,7 +123,8 @@ public enum Option {
      * when using this mode, the result will be [{"price":30,"name":"book1"}]. That is what we expected.
      *
      *
-     * Notice: When using this mode, the path of the result will be incorrect. Besides, SET operation will don't work.
+     * Notice: When using this mode, the path of the result will be incorrect.
+     * Besides, SET operation will don't work.
      */
     FILTER_AS_ARRAY
 
