@@ -86,8 +86,7 @@ public class ScanPathToken extends PathToken {
     public static void walkObject(PathToken pt, String currentPath, PathRef parent, Object model, EvaluationContextImpl ctx, Predicate predicate) {
         // Detect whether the next node is leaf and array
         List<Integer> indexList = null; //NOPMD - suppressed DataflowAnomalyAnalysis
-        final PathToken nxt = pt.next();
-        if (!pt.isLeaf() && nxt instanceof ArrayIndexToken && nxt.isLeaf()) { //NOPMD - suppressed LawOfDemeter - TODO explain reason for suppression
+        if (!pt.isLeaf() && pt.next() instanceof ArrayIndexToken && pt.next().isLeaf()) { //NOPMD - suppressed LawOfDemeter - TODO explain reason for suppression
             //Using reflect to get the field
             final ArrayIndexToken token = (ArrayIndexToken) pt.next();
             try {
