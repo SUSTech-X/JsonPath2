@@ -3,10 +3,20 @@ package com.jayway.jsonpath;
 
 import org.junit.Test;
 
+
+/**
+ * test for issue_806
+ */
 public class Issue_654 {
 
+    /**
+     * CONF. configuration with FILTER_SLICE_AS_ARRAY
+     */
     public static final Configuration conf = Configuration.builder().options(Option.FILTER_AS_ARRAY).build();
 
+    /**
+     * JSON. given json
+     */
     public static final String json = "[\n" +
             "    [0, 1, 2], \n" +
             "    [3, 4, 5],\n" +

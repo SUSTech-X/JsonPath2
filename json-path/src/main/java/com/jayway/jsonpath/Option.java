@@ -15,7 +15,7 @@
 package com.jayway.jsonpath;
 
 public enum Option {
-
+    //CS304 Issue link: https://github.com/json-path/JsonPath/issues/654
     /**
      * returns <code>null</code> for missing leaf.
      *

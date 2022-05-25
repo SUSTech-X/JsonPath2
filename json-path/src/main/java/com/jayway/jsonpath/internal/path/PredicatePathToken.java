@@ -43,6 +43,17 @@ public class PredicatePathToken extends PathToken {
         this.predicates = predicates;
     }
 
+    /**
+     * Add a judgement in evaluate, check whether using FILTER_SLICE_AS_ARRAY mode.
+     * <p>
+     *     Details about FILTER_SLICE_AS_ARRAY in com/jayway/jsonpath/Option.java
+     * </p>
+     *
+     * @param currentPath the current json path
+     * @param ref path set operation reference
+     * @param model current json model
+     * @param ctx evaluation context in the evaluation
+     */
     @Override
     public void evaluate(String currentPath, PathRef ref, Object model, EvaluationContextImpl ctx) {
         if (ctx.jsonProvider().isMap(model)) {
@@ -55,6 +66,7 @@ public class PredicatePathToken extends PathToken {
                 }
             }
         } else if (ctx.jsonProvider().isArray(model)){
+            //CS304 Issue link: https://github.com/json-path/JsonPath/issues/654
             if (ctx.configuration().containsOption(Option.FILTER_AS_ARRAY)){
                 //using FILTER_AS_ARRAY mode, details at com/jayway/jsonpath/Option.FILTER_AS_ARRAY
                 Iterable<?> objects = ctx.jsonProvider().toIterable(model);

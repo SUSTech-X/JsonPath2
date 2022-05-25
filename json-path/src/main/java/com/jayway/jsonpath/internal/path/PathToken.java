@@ -131,6 +131,18 @@ public abstract class PathToken {
     }
 
 
+    /**
+     * Treat the array after filtered or slice as a whole element.
+     *
+     *<p>
+     *     the method is used then using FILTER_SLICE_AS_ARRAY.
+     *     Details about FILTER_SLICE_AS_ARRAY in com/jayway/jsonpath/Option.java
+     *</p>
+     * @param currentPath current json path
+     * @param model the array after filtered or slice
+     * @param ctx evaluation context in the evaluation
+     */
+    //CS304 Issue link: https://github.com/json-path/JsonPath/issues/654
     protected void handleArrayIndex(int index, String currentPath, Object model, EvaluationContextImpl ctx) {
         String evalPath = Utils.concat(currentPath, "[", String.valueOf(index), "]");
         PathRef pathRef = ctx.forUpdate() ? PathRef.create(model, index) : PathRef.NO_OP;
