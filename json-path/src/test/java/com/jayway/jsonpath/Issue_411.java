@@ -6,6 +6,7 @@ import org.junit.Test;
 /**
  * Test for Issue 411
  */
+//CS304 Issue link: https://github.com/json-path/JsonPath/issues/515
 public class Issue_411 { //NOPMD - suppressed AtLeastOneConstructor
     /**
      * Test whether the index work
