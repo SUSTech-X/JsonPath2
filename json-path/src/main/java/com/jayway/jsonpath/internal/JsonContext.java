@@ -41,7 +41,7 @@ import static com.jayway.jsonpath.internal.Utils.notEmpty;
 import static com.jayway.jsonpath.internal.Utils.notNull;
 
 public class JsonContext implements DocumentContext {
-    public static List<Configuration> configurationList=new ArrayList<>();
+    static List<Configuration> configurationList = new ArrayList<>();
 
     private static final Logger logger = LoggerFactory.getLogger(JsonContext.class);
 
@@ -58,6 +58,7 @@ public class JsonContext implements DocumentContext {
     public JsonContext() {
 
     }
+
     @Override
     public Configuration configuration() {
         return configuration;
@@ -153,7 +154,7 @@ public class JsonContext implements DocumentContext {
     @Override
     public DocumentContext map(JsonPath path, MapFunction mapFunction) {
         Object obj = path.map(json, mapFunction, configuration);
-        return obj==null ? null:this;
+        return obj == null ? null : this;
     }
 
     @Override
@@ -232,21 +233,36 @@ public class JsonContext implements DocumentContext {
         return jsonPath;
     }
 
+    /**
+     * Write an ObjectOutput to a file
+     * @param objectOutput the ObjectOutput needs to be writen out
+     * @throws IOException the IOException may be thrown
+     */
+    //CS304 Issue link: https://github.com/json-path/JsonPath/issues/515
     @Override
-    public void writeExternal( ObjectOutput objectOutput ) throws IOException {
+    public void writeExternal(final ObjectOutput objectOutput) throws IOException {
+        //add this configuration to the configuration list and write out
         configurationList.add(this.configuration);
         objectOutput.writeObject(json);
-        objectOutput.writeInt(configurationList.size()-1);
+        objectOutput.writeInt(configurationList.size() - 1);
     }
 
+    /**
+     * Read json from external file
+     * @param objectInput the ObjectInput needs to be read
+     * @throws IOException the IOException may be thrown
+     * @throws ClassNotFoundException the ClassNotFoundException may be thrown
+     */
+    //CS304 Issue link: https://github.com/json-path/JsonPath/issues/515
     @Override
-    public void readExternal( ObjectInput objectInput ) throws IOException, ClassNotFoundException {
-        json=objectInput.readObject();
-        configuration=configurationList.get(objectInput.readInt());
+    public void readExternal(final ObjectInput objectInput) throws IOException, ClassNotFoundException {
+        //read Object from ObjectInput to json and set configuration
+        json = objectInput.readObject();
+        configuration = configurationList.get(objectInput.readInt());
     }
 
     private final static class LimitingEvaluationListener implements EvaluationListener {
-        final int limit;
+        private final int limit;
 
         private LimitingEvaluationListener(int limit) {
             this.limit = limit;
