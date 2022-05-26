@@ -83,6 +83,7 @@ public class ScanPathToken extends PathToken {
      * @param ctx         the EvaluationContextImpl object
      * @param predicate   the predicate
      */
+    //CS304 Issue link: https://github.com/json-path/JsonPath/issues/515
     public static void walkObject(PathToken pt, String currentPath, PathRef parent, Object model, EvaluationContextImpl ctx, Predicate predicate) {
         // Detect whether the next node is leaf and array
         List<Integer> indexList = null; //NOPMD - suppressed DataflowAnomalyAnalysis
