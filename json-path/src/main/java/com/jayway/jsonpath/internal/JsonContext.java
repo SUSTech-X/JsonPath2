@@ -29,6 +29,10 @@ import com.jayway.jsonpath.spi.cache.CacheProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -37,11 +41,12 @@ import static com.jayway.jsonpath.internal.Utils.notEmpty;
 import static com.jayway.jsonpath.internal.Utils.notNull;
 
 public class JsonContext implements DocumentContext {
+    static List<Configuration> configurationList = new ArrayList<>();
 
     private static final Logger logger = LoggerFactory.getLogger(JsonContext.class);
 
-    private final Configuration configuration;
-    private final Object json;
+    private Configuration configuration;
+    private Object json;
 
     JsonContext(Object json, Configuration configuration) {
         notNull(json, "json can not be null");
@@ -50,6 +55,9 @@ public class JsonContext implements DocumentContext {
         this.json = json;
     }
 
+    public JsonContext() {
+
+    }
 
     @Override
     public Configuration configuration() {
@@ -146,7 +154,7 @@ public class JsonContext implements DocumentContext {
     @Override
     public DocumentContext map(JsonPath path, MapFunction mapFunction) {
         Object obj = path.map(json, mapFunction, configuration);
-        return obj==null ? null:this;
+        return obj == null ? null : this;
     }
 
     @Override
@@ -216,7 +224,7 @@ public class JsonContext implements DocumentContext {
     private JsonPath pathFromCache(String path, Predicate[] filters) {
         Cache cache = CacheProvider.getCache();
         String cacheKey = filters == null || filters.length == 0
-            ? path : Utils.concat(path, Arrays.toString(filters));
+                ? path : Utils.concat(path, Arrays.toString(filters));
         JsonPath jsonPath = cache.get(cacheKey);
         if (jsonPath == null) {
             jsonPath = compile(path, filters);
@@ -225,8 +233,36 @@ public class JsonContext implements DocumentContext {
         return jsonPath;
     }
 
+    /**
+     * Write an ObjectOutput to a file
+     * @param objectOutput the ObjectOutput needs to be writen out
+     * @throws IOException the IOException may be thrown
+     */
+    //CS304 Issue link: https://github.com/json-path/JsonPath/issues/515
+    @Override
+    public void writeExternal(final ObjectOutput objectOutput) throws IOException {
+        //add this configuration to the configuration list and write out
+        configurationList.add(this.configuration);
+        objectOutput.writeObject(json);
+        objectOutput.writeInt(configurationList.size() - 1);
+    }
+
+    /**
+     * Read json from external file
+     * @param objectInput the ObjectInput needs to be read
+     * @throws IOException the IOException may be thrown
+     * @throws ClassNotFoundException the ClassNotFoundException may be thrown
+     */
+    //CS304 Issue link: https://github.com/json-path/JsonPath/issues/515
+    @Override
+    public void readExternal(final ObjectInput objectInput) throws IOException, ClassNotFoundException {
+        //read Object from ObjectInput to json and set configuration
+        json = objectInput.readObject();
+        configuration = configurationList.get(objectInput.readInt());
+    }
+
     private final static class LimitingEvaluationListener implements EvaluationListener {
-        final int limit;
+        private final int limit;
 
         private LimitingEvaluationListener(int limit) {
             this.limit = limit;

@@ -16,11 +16,13 @@ package com.jayway.jsonpath.internal.path;
 
 import com.jayway.jsonpath.Configuration;
 import com.jayway.jsonpath.InvalidPathException;
+import com.jayway.jsonpath.Option;
 import com.jayway.jsonpath.Predicate;
 import com.jayway.jsonpath.internal.PathRef;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
@@ -41,6 +43,17 @@ public class PredicatePathToken extends PathToken {
         this.predicates = predicates;
     }
 
+    /** //NOPMD - suppressed CommentSize - TODO explain reason for suppression
+     * Add a judgement in evaluate, check whether using FILTER_SLICE_AS_ARRAY mode.
+     * <p>
+     *     Details about FILTER_SLICE_AS_ARRAY in com/jayway/jsonpath/Option.java
+     * </p>
+     *
+     * @param currentPath the current json path
+     * @param ref path set operation reference
+     * @param model current json model
+     * @param ctx evaluation context in the evaluation
+     */
     @Override
     public void evaluate(String currentPath, PathRef ref, Object model, EvaluationContextImpl ctx) {
         if (ctx.jsonProvider().isMap(model)) {
@@ -52,15 +65,29 @@ public class PredicatePathToken extends PathToken {
                     next().evaluate(currentPath, op, model, ctx);
                 }
             }
-        } else if (ctx.jsonProvider().isArray(model)){
-            int idx = 0;
-            Iterable<?> objects = ctx.jsonProvider().toIterable(model);
-
-            for (Object idxModel : objects) {
-                if (accept(idxModel, ctx.rootDocument(),  ctx.configuration(), ctx)) {
-                    handleArrayIndex(idx, currentPath, model, ctx);
+        } else if (ctx.jsonProvider().isArray(model)) {
+            //CS304 Issue link: https://github.com/json-path/JsonPath/issues/654
+            if (ctx.configuration().containsOption(Option.FILTER_AS_ARRAY)) {
+                //using FILTER_AS_ARRAY mode, details at com/jayway/jsonpath/Option.FILTER_AS_ARRAY
+                // NOPMD - suppressed CommentSize - TODO explain reason for suppression
+                Iterable<?> objects = ctx.jsonProvider().toIterable(model);
+                Object filteredModel = ctx.jsonProvider().createArray();
+                for (Object idxModel : objects) {
+                    if (accept(idxModel, ctx.rootDocument(), ctx.configuration(), ctx)) {
+                        ((List) filteredModel).add(idxModel);
+                    }
                 }
-                idx++;
+                handleWholeArray(currentPath, filteredModel, ctx);
+            } else {
+                int idx = 0;
+                Iterable<?> objects = ctx.jsonProvider().toIterable(model);
+
+                for (Object idxModel : objects) {
+                    if (accept(idxModel, ctx.rootDocument(),  ctx.configuration(), ctx)) {
+                        handleArrayIndex(idx, currentPath, model, ctx);
+                    }
+                    idx++;
+                }
             }
         } else {
             if (isUpstreamDefinite()) {
