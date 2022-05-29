@@ -12,18 +12,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package com.jayway.jsonpath;
 
 
 import com.jayway.jsonpath.internal.*;
 import com.jayway.jsonpath.internal.path.PathCompiler;
 import com.jayway.jsonpath.spi.json.JsonProvider;
+import net.minidev.json.JSONArray;
+import net.minidev.json.JSONObject;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
 import static com.jayway.jsonpath.Option.ALWAYS_RETURN_LIST;
 import static com.jayway.jsonpath.Option.AS_PATH_LIST;
@@ -88,6 +94,7 @@ import static com.jayway.jsonpath.internal.Utils.*;
  * String author = JsonPath.read(json, "$.store.book[1].author")
  * </code>
  */
+
 public class JsonPath {
 
     private final Path path;
@@ -354,9 +361,9 @@ public class JsonPath {
             try {
                 updateOperation.renameKey(oldKeyName, newKeyName, configuration);
             } catch (RuntimeException e) {
-                if(!optSuppressExceptions){
+                if (!optSuppressExceptions) {
                     throw e;
-                }else{
+                } else {
                     // With option SUPPRESS_EXCEPTIONS,
                     // the PathNotFoundException should be ignored and the other updateOperation should be continued.
                 }
@@ -682,6 +689,28 @@ public class JsonPath {
     }
 
     /**
+     * Parses the given JSONArray input using the default {@link Configuration} and
+     * returns a list of {@link DocumentContext} for path evaluation
+     *
+     * @param jsonArray JSONArray
+     * @return List of DocumentContext
+     */
+    @SuppressWarnings({"unchecked"})
+    public static List<DocumentContext> parse(final JSONArray jsonArray) {
+        // CS304 Issue link: https://github.com/json-path/JsonPath/issues/830
+        // create List Object to store the DocumentContexts
+        final List<DocumentContext> contextList = new ArrayList<>();
+        final Object[] objects = jsonArray.toArray();
+        for (final Object o: objects) {
+            // For each item in JSONArray,
+            // try to parse it and add the returned documentContext to the list
+            final JSONObject jsonObject = new JSONObject((Map<String, ?>) o); //NOPMD - suppressed AvoidInstantiatingObjectsInLoops
+            contextList.add(new ParseContextImpl().parse(jsonObject.toJSONString()));
+        }
+        return contextList;
+    }
+
+    /**
      * Parses the given JSON input using the provided {@link Configuration} and
      * returns a {@link DocumentContext} for path evaluation
      *
@@ -737,9 +766,31 @@ public class JsonPath {
         return new ParseContextImpl(configuration).parse(json);
     }
 
+    /**
+     * Parses the given JSONArray input using the provided {@link Configuration} and
+     * returns a list of {@link DocumentContext} for path evaluation
+     *
+     * @param jsonArray JSONArray
+     * @param configuration Configuration
+     * @return List of DocumentContext
+     */
+    @SuppressWarnings({"unchecked"})
+    public static List<DocumentContext> parse(final JSONArray jsonArray, final Configuration configuration) {
+        // CS304 Issue link: https://github.com/json-path/JsonPath/issues/830
+        // create List Object to store the DocumentContexts
+        final List<DocumentContext> contextList = new ArrayList<>();
+        for (final Object o : jsonArray.toArray()) {
+            // For each item in JSONArray,
+            // try to parse it and add the returned documentContext to the list
+            final JSONObject jsonObject = new JSONObject((Map<String, ?>) o); //NOPMD - suppressed AvoidInstantiatingObjectsInLoops
+            contextList.add(new ParseContextImpl(configuration).parse(jsonObject.toJSONString()));
+        }
+        return contextList;
+    }
+
     private <T> T resultByConfiguration(Object jsonObject, Configuration configuration, EvaluationContext evaluationContext) {
-        if(configuration.containsOption(AS_PATH_LIST)){
-            return (T)evaluationContext.getPathList();
+        if (configuration.containsOption(AS_PATH_LIST)) {
+            return (T) evaluationContext.getPathList();
         } else {
             return (T) jsonObject;
         }
